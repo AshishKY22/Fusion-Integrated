@@ -10,7 +10,13 @@ from modules.elm.api.serializers import (
     LeaveRequestCreateSerializer,
     LeaveRequestSerializer,
 )
-from modules.elm.models import LeaveAction, LeaveApplication, LeaveBalance
+from modules.elm.domain.errors import (
+    ApplicationNotFound,
+    LeaveRuleError,
+    SelfReviewNotAllowed,
+)
+from modules.elm.models import LeaveApplication, LeaveBalance
+from modules.elm.services.leave import apply_for_leave, decide_leave
 
 MODULE = HasModuleGrant("leave_elm")
 
@@ -38,9 +44,10 @@ class LeaveRequestListView(APIView):
     def post(self, request):
         serializer = LeaveRequestCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        obj = LeaveApplication.objects.create(user_id=current_user_id(request), **data)
-        LeaveAction.objects.create(application=obj, actor_user_id=obj.user_id, action="submitted")
+        try:
+            obj = apply_for_leave(current_user_id(request), serializer.validated_data)
+        except LeaveRuleError as exc:
+            return Response({"detail": str(exc)}, status=400)
         return Response(LeaveRequestSerializer(obj).data, status=status.HTTP_201_CREATED)
 
 
@@ -56,23 +63,22 @@ class LeaveDecisionView(APIView):
     permission_classes = [MODULE, HasPermission("leave_elm.request.review")]
 
     def post(self, request, pk):
-        obj = LeaveApplication.objects.filter(pk=pk).first()
-        if obj is None:
-            raise NotFound("Leave request not found.")
-        if obj.status != "pending":
-            return Response({"detail": "This request is no longer pending."}, status=400)
         decision = request.data.get("decision")
         if decision not in ("approve", "reject"):
             return Response({"detail": "decision must be approve or reject."}, status=400)
-        obj.status = "approved" if decision == "approve" else "rejected"
-        obj.decision_note = request.data.get("note", "")
-        obj.save(update_fields=["status", "decision_note"])
-        LeaveAction.objects.create(
-            application=obj,
-            actor_user_id=current_user_id(request),
-            action=decision,
-            note=obj.decision_note,
-        )
+        try:
+            obj = decide_leave(
+                pk,
+                current_user_id(request),
+                decision,
+                request.data.get("note", ""),
+            )
+        except SelfReviewNotAllowed as exc:
+            raise PermissionDenied(str(exc)) from exc
+        except ApplicationNotFound as exc:
+            raise NotFound(str(exc)) from exc
+        except LeaveRuleError as exc:
+            return Response({"detail": str(exc)}, status=400)
         return Response(LeaveRequestSerializer(obj).data)
 
 
