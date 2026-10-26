@@ -3,10 +3,13 @@ from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 
 from fusion_auth.permissions import HasModuleGrant, HasPermission
-from modules.elm.api.serializers import LeaveBalanceSerializer, LeaveRequestCreateSerializer, LeaveRequestSerializer
+from modules.elm.api.serializers import (
+    LeaveBalanceSerializer,
+    LeaveRequestCreateSerializer,
+    LeaveRequestSerializer,
+)
 from modules.elm.models import LeaveAction, LeaveApplication, LeaveBalance
 
 MODULE = HasModuleGrant("leave_elm")
@@ -20,7 +23,13 @@ def current_user_id(request):
 
 
 class LeaveRequestListView(APIView):
-    permission_classes = [MODULE, HasPermission("leave_elm.request.view_self", "leave_elm.request.apply")]
+    permission_classes = [
+        MODULE,
+        HasPermission(
+            "leave_elm.request.view_self",
+            "leave_elm.request.apply",
+        ),
+    ]
 
     def get(self, request):
         items = LeaveApplication.objects.filter(user_id=current_user_id(request))
@@ -58,7 +67,12 @@ class LeaveDecisionView(APIView):
         obj.status = "approved" if decision == "approve" else "rejected"
         obj.decision_note = request.data.get("note", "")
         obj.save(update_fields=["status", "decision_note"])
-        LeaveAction.objects.create(application=obj, actor_user_id=current_user_id(request), action=decision, note=obj.decision_note)
+        LeaveAction.objects.create(
+            application=obj,
+            actor_user_id=current_user_id(request),
+            action=decision,
+            note=obj.decision_note,
+        )
         return Response(LeaveRequestSerializer(obj).data)
 
 
@@ -66,5 +80,8 @@ class LeaveBalanceListView(APIView):
     permission_classes = [MODULE, HasPermission("leave_elm.balance.view_self")]
 
     def get(self, request):
-        balances = LeaveBalance.objects.filter(user_id=current_user_id(request), year=timezone.localdate().year)
+        balances = LeaveBalance.objects.filter(
+            user_id=current_user_id(request),
+            year=timezone.localdate().year,
+        )
         return Response(LeaveBalanceSerializer(balances, many=True).data)

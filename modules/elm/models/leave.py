@@ -1,6 +1,5 @@
 from django.db import models
 
-
 LEAVE_TYPES = [
     ("CL", "Casual Leave"),
     ("RH", "Restricted Holiday"),
@@ -18,7 +17,11 @@ class LeaveApplication(models.Model):
         ("rejected", "Rejected"),
         ("withdrawn", "Withdrawn"),
     ]
-    PART_CHOICES = [("full", "Full day"), ("first_half", "First half"), ("second_half", "Second half")]
+    PART_CHOICES = [
+        ("full", "Full day"),
+        ("first_half", "First half"),
+        ("second_half", "Second half"),
+    ]
 
     user_id = models.PositiveBigIntegerField(db_index=True)
     category = models.CharField(max_length=3, choices=LEAVE_TYPES)
@@ -51,13 +54,20 @@ class LeaveBalance(models.Model):
         unique_together = ("user_id", "year", "category")
         ordering = ["year", "category"]
 
+    def __str__(self):
+        return f"{self.category} balance for user {self.user_id} in {self.year}"
+
     @property
     def available_days(self):
         return self.entitled_days - self.used_days
 
 
 class LeaveAction(models.Model):
-    application = models.ForeignKey(LeaveApplication, on_delete=models.CASCADE, related_name="actions")
+    application = models.ForeignKey(
+        LeaveApplication,
+        on_delete=models.CASCADE,
+        related_name="actions",
+    )
     actor_user_id = models.PositiveBigIntegerField(null=True, blank=True)
     action = models.CharField(max_length=24)
     note = models.TextField(blank=True)
@@ -65,3 +75,6 @@ class LeaveAction(models.Model):
 
     class Meta:
         ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.action} on #{self.application_id} by {self.actor_user_id}"

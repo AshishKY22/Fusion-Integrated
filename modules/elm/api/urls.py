@@ -1,5 +1,11 @@
 from django.urls import path
-from modules.elm.api.views import LeaveBalanceListView, LeaveDecisionView, LeaveQueueView, LeaveRequestListView
+
+from modules.elm.api.views import (
+    LeaveBalanceListView,
+    LeaveDecisionView,
+    LeaveQueueView,
+    LeaveRequestListView,
+)
 
 urlpatterns = [
     path("requests", LeaveRequestListView.as_view(), name="elm-requests"),

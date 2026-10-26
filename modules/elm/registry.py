@@ -9,12 +9,30 @@ MODULE = {
 }
 
 NAV_ITEMS = [
-    {"code": "elm.requests", "label": "My Leave Requests", "icon": "Calendar",
-     "to": "/leave/requests", "required_permission": "leave_elm.request.view_self", "sort_order": 10},
-    {"code": "elm.balances", "label": "My Leave Balance", "icon": "Wallet",
-     "to": "/leave/balances", "required_permission": "leave_elm.balance.view_self", "sort_order": 20},
-    {"code": "elm.queue", "label": "Leave Approval Queue", "icon": "ClipboardList",
-     "to": "/leave/queue", "required_permission": "leave_elm.request.review", "sort_order": 30},
+    {
+        "code": "elm.requests",
+        "label": "My Leave Requests",
+        "icon": "Calendar",
+        "to": "/leave/requests",
+        "required_permission": "leave_elm.request.view_self",
+        "sort_order": 10,
+    },
+    {
+        "code": "elm.balances",
+        "label": "My Leave Balance",
+        "icon": "Wallet",
+        "to": "/leave/balances",
+        "required_permission": "leave_elm.balance.view_self",
+        "sort_order": 20,
+    },
+    {
+        "code": "elm.queue",
+        "label": "Leave Approval Queue",
+        "icon": "ClipboardList",
+        "to": "/leave/queue",
+        "required_permission": "leave_elm.request.review",
+        "sort_order": 30,
+    },
 ]
 
 PERMISSIONS = [
@@ -29,7 +47,7 @@ _EMPLOYEE = [
     "leave_elm.request.apply",
     "leave_elm.balance.view_self",
 ]
-_REVIEWER = _EMPLOYEE + ["leave_elm.request.review"]
+_REVIEWER = [*_EMPLOYEE, "leave_elm.request.review"]
 
 ROLE_GRANTS = {
     "employee": _EMPLOYEE,
